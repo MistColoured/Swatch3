@@ -22,6 +22,7 @@ class App extends Component {
     auth.onAuthStateChanged((user) => {
       if (user) {
         this.setState({ user });
+        const { uid } = user;
         const eventRef = firebase.database().ref(`users/${uid}/eventList`);
         eventRef.on('value', (snapshot) => {
           const newState = [];
