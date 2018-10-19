@@ -18,34 +18,34 @@ class App extends Component {
   }
 
   componentDidMount = () => {
-    console.log('toffees');
+    // Add listener to auth user logging
     auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log('user:', user);
         this.setState({ user });
+        const eventRef = firebase.database().ref(`users/${uid}/eventList`);
+        eventRef.on('value', (snapshot) => {
+          const newState = [];
+          if (snapshot.exists()) {
+            const items = snapshot.val();
+            Object.entries(items).forEach(([key, val]) => {
+              newState.push({
+                id: key,
+                event: val.event,
+                date: val.date,
+              });
+            });
+            // TODO Probably use a library to sort the data?
+            // console.log('Sorting...', newState);
+            // newState.sort((a, b) => a.date.localeCompare(b.date));
+            // console.log('Sorted...', newState);
+          }
+          this.setState({
+            eventList: newState,
+          });
+        });
       }
     });
 
-    const eventRef = firebase.database().ref('eventList');
-    eventRef.on('value', (snapshot) => {
-      const newState = [];
-      if (snapshot.exists()) {
-        const items = snapshot.val();
-        Object.entries(items).forEach(([key, val]) => {
-          newState.push({
-            id: key,
-            event: val.event,
-            date: val.date,
-          });
-        });
-        console.log('Sorting...', newState);
-        newState.sort((a, b) => a.date.localeCompare(b.date));
-        console.log('Sorted...', newState);
-      }
-      this.setState({
-        eventList: newState,
-      });
-    });
 
     this.timerId = setInterval(() => {
       this.setState({
@@ -64,7 +64,7 @@ class App extends Component {
     const {
       date, event, eventList, user,
     } = this.state;
-    const newPostKey = firebase.database().ref('eventList').push().key;
+    const newPostKey = firebase.database().ref(`users/${user.uid}/eventList`).push().key;
     const postObject = {
       id: user.email,
       date,
@@ -73,7 +73,7 @@ class App extends Component {
     const eventObjectWrapper = {};
     eventObjectWrapper[newPostKey] = postObject;
 
-    firebase.database().ref('eventList').update(eventObjectWrapper)
+    firebase.database().ref(`users/${user.uid}/eventList`).update(eventObjectWrapper)
       .then(() => {
         eventList.push({
           id: newPostKey,
